@@ -426,6 +426,7 @@
             // document.getElementById("codeColumn").scrollIntoView({
             //   behavior: "smooth",
             // });
+            window.location.href = "#codeColumn";
             document.getElementById("codeColumn").style.paddingTop = "60px";
             document.getElementById("run-loader").style.display = "block";
             document.getElementById("run-btn-text").style.display = "none";
@@ -448,6 +449,7 @@
           try {
             if (window.innerWidth < 992) {
               const compiledOutput = document.getElementById("compilerColumn");
+              window.location.href = "#compilerColumn";
               //   compiledOutput.scrollIntoView({
               //     behavior: "smooth",
               //   });
