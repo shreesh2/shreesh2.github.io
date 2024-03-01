@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Code Editor - Code Academy</title>
+    <!-- Include the Monaco Editor CSS -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/monaco-editor@latest/min/vs/editor/editor.main.css"
+    />
+    <!-- Bootstrap CSS -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
+      integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N"
+      crossorigin="anonymous"
+    />
+
+    <!-- Include the Monaco Editor JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@latest/min/vs/loader.js"></script>
+  </head>
+  <style>
+    html,
+    body {
+      height: 100%;
+    }
+
+    :root {
+      --border-stroke: 1px solid #424242;
+    }
+
+    .editor-head-container,
+    .editor-main-container,
+    .editor-footer-container {
+      border: var(--border-stroke);
+      background-color: black;
+    }
+
+    .editor-main-container {
+      border-bottom: none !important;
+    }
+
+    .transparent-button {
+      background: transparent;
+      outline: none;
+      border: none;
+      padding: 0;
+    }
+
+    .transparent-button:focus {
+      outline: none;
+    }
+
+    .run-btn {
+      background: #feba01;
+      color: #10162f;
+      -webkit-font-smoothing: antialiased;
+      font-weight: 700;
+      white-space: nowrap;
+      border-radius: 4px;
+      padding: 0.25rem 2rem;
+      font-size: 16px;
+      min-width: 40px;
+      height: 40px;
+    }
+
+    .editor-subheader {
+      background: #000;
+      border-left: var(--border-stroke);
+      border-right: var(--border-stroke);
+    }
+
+    .header-btns {
+      font-size: 20px;
+    }
+
+    .collapse-code,
+    .collapse-output {
+      transition: all 0.3s ease;
+    }
+
+    .monaco-editor .line-numbers {
+      left: -20px !important;
+    }
+
+    .editor-collapse {
+      transition: width 0.3s ease; /* Change transition property to max-width */
+      width: 50%;
+    }
+
+    .collapse-column {
+      transition: width 0.3s ease; /* Change transition property to max-width */
+      width: 50%;
+    }
+
+    .collapse-column.expanded-column {
+      width: 80%;
+    }
+    .editor-collapse.expanded-column2 {
+      width: 100%;
+    }
+    .collapsed2 {
+      width: 0%;
+    }
+    .collapsed2.display {
+      display: none;
+      color: #000 !important;
+    }
+    .collapsed {
+      width: 16.6667%;
+    }
+
+    .collapse-code .fa-chevron-left,
+    .collapse-output .fa-chevron-right {
+      transition: transform 0.3s ease; /* Transition for the chevron icon */
+    }
+
+    .collapse-code.clicked .fa-chevron-left,
+    .collapse-output.clicked .fa-chevron-right {
+      transform: rotate(180deg); /* Rotate the chevron icon */
+    }
+
+    .collapse-code.clicked .fa-chevron-right,
+    .collapse-output.clicked .fa-chevron-left {
+      transform: rotate(0deg);
+    }
+
+    #editor {
+      width: 100%;
+      height: calc(100vh - 50px);
+      transition: opacity 0.3s ease;
+      opacity: 1;
+    }
+
+    #compiledOutput {
+      transition: opacity 0.3s ease;
+      opacity: 1;
+      font-size: 18px;
+    }
+
+    #compiledOutput.display {
+      display: none;
+    }
+
+    #compiledOutput.collapsed {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #editor.collapsed {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .monaco-editor {
+      width: inherit !important;
+    }
+    .monaco-editor .overflow-guard {
+      width: inherit !important;
+    }
+
+    .editor-collapse.expanded-column2 .view-lines.monaco-mouse-cursor-text {
+      width: 1284px !important;
+    }
+    .editor-collapse.expanded-column2 .monaco-scrollable-element {
+      width: 100% !important;
+    }
+    .editor-collapse.expanded-column2 .minimap.slider-mouseover {
+      display: none !important;
+    }
+    .editor-collapse.expanded-column2 .invisible.scrollbar.horizontal.fade {
+      display: none !important;
+    }
+
+    #compilerColumn {
+      position: relative;
+    }
+
+    .loader {
+      border: 6px solid #f3f3f3;
+      border-top: 6px solid #feba01;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 0.5s linear infinite;
+      position: absolute;
+      top: 45%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .run-loader {
+      border: 2px solid #000;
+      border-top: 4px solid transparent;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin 0.5s linear infinite;
+    }
+
+    .hide {
+      display: none;
+    }
+
+    #run-btn.run-disabled {
+      pointer-events: none;
+      /* opacity: 0.5; */
+    }
+
+    .output-column {
+      text-align: right;
+    }
+
+    .editor-footer-container {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      z-index: 9;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (min-width: 991px) {
+      .main-area {
+        padding: 0px;
+        overflow-y: scroll;
+      }
+    }
+
+    @media (max-width: 991px) {
+      .loader {
+        top: 40%;
+        left: 45%;
+      }
+      .output-column {
+        text-align: left;
+      }
+      .editor-head-container {
+        position: fixed;
+        z-index: 9;
+        width: 100%;
+      }
+      .code-subheader {
+        margin-top: 50px;
+      }
+    }
+  </style>
+  <body>
+    <div class="container-fluid m-0 p-0 overflow-hidden h-100">
+      <div class="row m-0 p-0 h-100 area">
+        <div class="col-12 h-100 main-area" style="padding: 0px">
+          <!-- header  -->
+
+          <div class="editor-head-container" id="compilerHead">
+            <div class="row p-0 m-0 w-100">
+              <div
+                class="col-12 justify-content-start w-100"
+                style="padding: 10px 20px"
+              >
+                <button class="transparent-button">
+                  <img src="./kod-logo.png" height="30px" />
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="row p-0 m-0 w-100">
+            <div class="col-lg-6 p-0 code-subheader">
+              <div class="row p-0 m-0 w-100">
+                <div
+                  id="codeColumn"
+                  class="col-12 editor-header"
+                  style="
+                    padding: 10px 30px;
+                    border-right: var(--border-stroke);
+                    background: #000;
+                    border-bottom: var(--border-stroke);
+                    border-left: var(--border-stroke);
+                  "
+                >
+                  <button
+                    class="transparent-button collapse-code header-btns text-white"
+                    id="toggleCodeButton"
+                    style="font-size: 16px"
+                  >
+                    <i class="fa-solid fa-chevron-left mr-3"></i> Write your
+                    Code here
+                  </button>
+                </div>
+                <div
+                  class="col-12 pr-0 pl-0 text-white editor-column"
+                  id="editorColumn"
+                  style="
+                    padding: 0px 15px;
+                    font-size: 20px;
+                    border-right: var(--border-stroke);
+                  "
+                >
+                  <div id="editor" style="width: 100%"></div>
+                </div>
+              </div>
+            </div>
+            <div id="compiledContent" class="col-lg-6 pr-0 pl-0 pb-0">
+              <div class="row p-0 m-0 w-100 h-100">
+                <div
+                  id="outputColumn"
+                  class="col-12 editor-header output-column"
+                  style="
+                    padding: 10px 30px;
+                    font-size: 16px;
+                    background: #000;
+                    height: fit-content;
+                    border-bottom: var(--border-stroke);
+                    border-right: var(--border-stroke);
+                  "
+                >
+                  <button
+                    class="transparent-button collapse-output header-btns code text-white"
+                    id="toggleOutputButton"
+                    style="font-size: 16px"
+                  >
+                    Check your Output here
+                    <i class="fa-solid fa-chevron-right ml-3"></i>
+                  </button>
+                </div>
+                <div
+                  class="col-12 text-white editor-column"
+                  id="compilerColumn"
+                  style="
+                    padding: 20px 30px;
+                    font-size: 20px;
+                    background: #000;
+                    height: calc(100vh - 50px);
+                    border-right: var(--border-stroke);
+                    overflow-y: scroll;
+                    padding-bottom: 100px;
+                  "
+                >
+                  <div id="compiledOutput">Output will be displayed here</div>
+                  <div id="loader" class="loader" style="display: none"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="footerContainer" class="editor-footer-container">
+            <div class="row p-0 m-0 w-100">
+              <div class="col-12 justify-content-end text-right w-100 p-0">
+                <button
+                  id="run-btn"
+                  class="transparent-button run-btn"
+                  onclick="runCode()"
+                >
+                  <div
+                    id="run-loader"
+                    class="run-loader"
+                    style="display: none"
+                  ></div>
+                  <span id="run-btn-text">Run</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap Bundle  -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"
+      integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://kit.fontawesome.com/a0df17a9c8.js"
+      crossorigin="anonymous"
+    ></script>
+    <script>
+      // Function to initialize the Monaco Editor
+      function initializeEditor() {
+        require.config({
+          paths: {
+            vs: "https://cdn.jsdelivr.net/npm/monaco-editor@latest/min/vs",
+          },
+        });
+        require(["vs/editor/editor.main"], function () {
+          // Set the dark theme
+          monaco.editor.setTheme("vs-dark");
+
+          // Initialize Monaco Editor
+          var editor = monaco.editor.create(document.getElementById("editor"), {
+            value: 'console.log("Hello, Welcome to KodNest!")',
+            language: "javascript",
+            theme: "vs-dark",
+            fontSize: 18,
+            padding: {
+              top: 20,
+              bottom: 20,
+              right: 20,
+            },
+            width: "100%",
+            height: `100%`,
+          });
+        });
+      }
+
+      initializeEditor();
+
+      async function runCode() {
+        if (
+          document.getElementById("run-btn-text").innerHTML?.includes("Retry")
+        ) {
+          if (window.innerWidth < 992) {
+            document.getElementById("compiledContent").style.paddingTop = "0px";
+            // document.getElementById("codeColumn").scrollIntoView({
+            //   behavior: "smooth",
+            // });
+            document.getElementById("codeColumn").style.paddingTop = "60px";
+            document.getElementById("run-loader").style.display = "block";
+            document.getElementById("run-btn-text").style.display = "none";
+            setTimeout(() => {
+              document.getElementById("run-btn-text").innerHTML = "Run";
+              document.getElementById("run-loader").style.display = "none";
+              document.getElementById("run-btn-text").style.display = "block";
+            }, 500);
+          }
+        } else {
+          const sourceCode = monaco.editor.getModels()[0].getValue();
+          const languageId = 63;
+          const apiKey = "633d3e61-a5dd-484d-ac4c-46d19593830d";
+          const clientId = "KzgGp2KU3rZNZVLS";
+          const clientSecret = "ZXQrgPz6CTvZxEW2J32sE4HyHpFjS7bp";
+
+          const url =
+            "https://ce.judge0.com/submissions?base64_encoded=false&wait=true";
+
+          try {
+            if (window.innerWidth < 992) {
+              // const compiledOutput = document.getElementById("compilerColumn");
+              // compiledOutput.scrollIntoView({
+              //   behavior: "smooth",
+              // });
+              setTimeout(() => {
+                document.getElementById("compiledContent").style.paddingTop =
+                  "45px";
+              }, 800);
+            }
+
+            document.getElementById("loader").style.display = "block";
+            document.getElementById("compiledOutput").style.display = "none";
+            document.getElementById("run-loader").style.display = "block";
+            document.getElementById("run-btn-text").style.display = "none";
+            const runBtn = document.getElementById("run-btn");
+            runBtn.classList.add("run-disabled");
+            const response = await fetch(url, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Judge0-Key": apiKey,
+                "X-Judge0-Client-ID": clientId,
+                "X-Judge0-Client-Secret": clientSecret,
+              },
+              body: JSON.stringify({
+                source_code: sourceCode,
+                language_id: languageId,
+              }),
+            });
+
+            const data = await response.json();
+            let output;
+            let error = false;
+            // console.log(data);
+            if (data?.stdout) {
+              output = data?.stdout;
+              error = false;
+            } else if (data?.compile_output) {
+              output = data?.compile_output;
+              error = true;
+            } else if (data?.stderr) {
+              output = data?.stderr;
+              error = true;
+            } else {
+              output = "There seems to be an issue with your code.";
+            }
+
+            document.getElementById("loader").style.display = "none";
+            document.getElementById("compiledOutput").style.display = "block";
+
+            document.getElementById("run-loader").style.display = "none";
+            document.getElementById("run-btn-text").style.display = "block";
+
+            runBtn.classList.remove("run-disabled");
+            if (window.innerWidth < 992) {
+              document.getElementById("run-btn-text").innerHTML = "Retry";
+            }
+
+            document.getElementById("compiledOutput").innerText = `${output}`;
+            if (error) {
+              document.getElementById("compiledOutput").style.color = "red";
+            } else {
+              document.getElementById("compiledOutput").style.color = "white";
+            }
+          } catch (error) {
+            console.error("Error submitting code to Judge0:", error.message);
+          }
+        }
+      }
+    </script>
+  </body>
+</html>
